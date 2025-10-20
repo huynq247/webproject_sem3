@@ -17,49 +17,87 @@ services:
       - auth-service
       - content-service
       - assignment-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   auth-service:
     build: ./lms_micro_services/auth-service
     container_name: lms-auth-service
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@lms-db:5432/lms_auth
+      # Sử dụng kết nối database hiện có
+      - DATABASE_URL=postgresql://admin:Mypassword123@14.161.50.86:25432/postgres
+      - ENVIRONMENT=development
+      - DEPLOYMENT_TYPE=single-server
       - SECRET_KEY=your_secret_key
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
     networks:
       - lms-network
-    depends_on:
-      - lms-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   content-service:
     build: ./lms_micro_services/content-service
     container_name: lms-content-service
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@lms-db:5432/lms_content
+      # Sử dụng kết nối MongoDB hiện có
+      - MONGODB_URL=mongodb://admin:Mypassword123@14.161.50.86:27017/content_db?authSource=admin
+      - MONGODB_DB_NAME=content_db
+      - ENVIRONMENT=development
+      - SERVICE_NAME=content-service
+      - HOST=0.0.0.0
+      - PORT=8002
+      - DEBUG=true
       - AUTH_SERVICE_URL=http://auth-service:8001
-      # Add any additional environment variables for your content service
+      - JWT_SECRET_KEY=microservices-lms-secret-key-2025-production-secure-auth-service
+      - JWT_ALGORITHM=HS256
     networks:
       - lms-network
     depends_on:
-      - lms-db
       - auth-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   assignment-service:
     build: ./lms_micro_services/assignment-service
     container_name: lms-assignment-service
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@lms-db:5432/lms_assignment
+      # Sử dụng kết nối database hiện có
+      - DATABASE_URL=postgresql+asyncpg://admin:Mypassword123@14.161.50.86:25432/postgres
+      - POSTGRES_HOST=14.161.50.86
+      - POSTGRES_PORT=25432
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=Mypassword123
       - AUTH_SERVICE_URL=http://auth-service:8001
       - CONTENT_SERVICE_URL=http://content-service:8002
+      - JWT_SECRET_KEY=your-jwt-secret-key-here-change-in-production
     networks:
       - lms-network
     depends_on:
-      - lms-db
       - auth-service
       - content-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # Frontend Applications
@@ -74,6 +112,12 @@ services:
       - lms-network
     depends_on:
       - api-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   frontend-teacher:
@@ -87,6 +131,12 @@ services:
       - lms-network
     depends_on:
       - api-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   frontend-student:
@@ -100,28 +150,14 @@ services:
       - lms-network
     depends_on:
       - api-gateway
-    restart: unless-stopped
-
-  # Database
-  lms-db:
-    image: postgres:14
-    container_name: lms-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_MULTIPLE_DATABASES=lms_auth,lms_content,lms_assignment
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./scripts/create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/create-multiple-postgresql-databases.sh
-    networks:
-      - lms-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
 networks:
   lms-network:
     driver: bridge
-
-volumes:
-  postgres-data:

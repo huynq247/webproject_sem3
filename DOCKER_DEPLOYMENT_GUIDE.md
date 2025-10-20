@@ -8,6 +8,7 @@ Hướng dẫn triển khai ứng dụng LMS Microservices trên Docker cho máy
 - Docker 20.10+
 - Docker Compose 2.0+
 - Git
+- Kết nối mạng đến database hiện có (PostgreSQL và MongoDB)
 
 ## Cài đặt môi trường
 
@@ -42,11 +43,22 @@ git clone https://github.com/huynq247/webproject_sem3.git
 cd webproject_sem3
 ```
 
-### 3. Cài đặt file permissions cho script khởi tạo database
+### 3. Kiểm tra kết nối database
 
-```bash
-chmod +x scripts/create-multiple-postgresql-databases.sh
-```
+Ứng dụng được cấu hình để kết nối đến database hiện có:
+
+- PostgreSQL: 14.161.50.86:25432
+  - User: admin
+  - Password: Mypassword123
+  - Database: postgres
+
+- MongoDB: 14.161.50.86:27017
+  - User: admin
+  - Password: Mypassword123
+  - Database: content_db
+  - Auth Source: admin
+
+Đảm bảo bạn có thể kết nối đến các database này từ máy chủ RedHat của bạn.
 
 ## Triển khai ứng dụng
 
