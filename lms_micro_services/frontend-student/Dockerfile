@@ -16,7 +16,7 @@ COPY . .
 RUN CI=false npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:1.25.3-alpine
 COPY --from=build /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
