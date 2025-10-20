@@ -236,7 +236,7 @@ Services đang chạy sẽ hiển thị logs trực tiếp trong terminal.
 
 ---
 
-## � Environment Variables
+## 🔐 Environment Variables
 
 Mỗi service cần file `.env` trong thư mục của nó:
 
@@ -250,8 +250,33 @@ lms_micro_services/
 **Cấu hình quan trọng:**
 - `DATABASE_URL`: Kết nối PostgreSQL
 - `MONGODB_URL`: Kết nối MongoDB  
-- `REDIS_URL`: Kết nối Redis
+- `REDIS_URL`: Kết nối Redis (bắt buộc)
+- `RABBITMQ_URL`: Kết nối RabbitMQ (bắt buộc)
+- `LOCAL_IP`: IP local của service (bắt buộc, thường là 0.0.0.0)
+- `PUBLIC_IP`: IP public hoặc hostname (bắt buộc)
 - `SECRET_KEY`: JWT secret key
+
+### Biến môi trường bắt buộc cho Docker
+
+Khi triển khai trong Docker, cần đảm bảo có đủ các biến môi trường sau:
+
+```yaml
+environment:
+  # Database
+  - DATABASE_URL=postgresql://user:pass@host:port/db
+  
+  # Các biến bắt buộc cho Pydantic
+  - REDIS_URL=redis://localhost:6379/0
+  - RABBITMQ_URL=amqp://guest:guest@localhost:5672/
+  - LOCAL_IP=0.0.0.0
+  - PUBLIC_IP=localhost
+  
+  # Các biến khác
+  - ENVIRONMENT=development
+  - SECRET_KEY=your-secret-key
+```
+
+Tài liệu đầy đủ về xử lý lỗi thiếu biến môi trường trong Docker có thể được tìm thấy trong file `DOCKER_BACKEND_TROUBLESHOOTING.md`.
 
 ---
 
