@@ -12,13 +12,13 @@ ImportError: email-validator is not installed, run `pip install pydantic[email]`
 
 ## Vấn đề 2: Thiếu pydantic-settings
 
-Dịch vụ `content-service` liên tục bị khởi động lại với lỗi sau:
+Dịch vụ `content-service` và `assignment-service` liên tục bị khởi động lại với lỗi sau:
 
 ```
 ModuleNotFoundError: No module named 'pydantic_settings'
 ```
 
-Đây là do gói `pydantic-settings` không được cài đặt trong content-service, nhưng được sử dụng trong cấu hình.
+Đây là do gói `pydantic-settings` không được cài đặt trong các dịch vụ, nhưng được sử dụng trong cấu hình.
 
 ## Vấn đề 3: Thiếu asyncpg
 
@@ -42,12 +42,28 @@ Thêm dòng sau vào tệp `requirements.txt` của auth-service:
 email-validator==2.1.0
 ```
 
-#### 2. Thêm pydantic-settings cho content-service
+#### 2. Thêm pydantic-settings cho content-service và assignment-service
 
-Thêm dòng sau vào tệp `requirements.txt` của content-service:
+Thêm dòng sau vào tệp `requirements.txt` của content-service và assignment-service:
 
 ```
 pydantic-settings==2.1.0
+```
+
+### Phương án 2: Cập nhật Dockerfile để đảm bảo các gói phụ thuộc được cài đặt đúng thứ tự
+
+Nếu Phương án 1 không hoạt động, có thể thay đổi cách cài đặt trong Dockerfile để đảm bảo các gói phụ thuộc quan trọng được cài đặt đúng cách:
+
+```dockerfile
+# Cài đặt các gói phụ thuộc quan trọng trước
+RUN pip install --no-cache-dir pydantic-settings==2.1.0 email-validator==2.1.0
+
+# Sau đó cài đặt phần còn lại
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Cài đặt lại các gói phụ thuộc quan trọng để đảm bảo chúng không bị ghi đè
+RUN pip install --no-cache-dir pydantic-settings==2.1.0 email-validator==2.1.0
+```
 ```
 
 #### 3. Thêm email-validator và asyncpg cho assignment-service
@@ -97,6 +113,24 @@ Sửa Dockerfile của các dịch vụ backend để cài đặt các gói ph�
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir email-validator
 ```
+
+**content-service/Dockerfile**:
+```dockerfile
+# Sau dòng cài đặt requirements
+RUN pip install --no-cache-dir -r requirements.txt
+# Install email-validator and pydantic-settings explicitly
+RUN pip install --no-cache-dir email-validator==2.1.0 pydantic-settings==2.1.0
+```
+
+**assignment-service/Dockerfile**:
+```dockerfile
+# Sau dòng cài đặt requirements
+RUN pip install --no-cache-dir -r requirements.txt
+# Install email-validator and pydantic-settings explicitly
+RUN pip install --no-cache-dir email-validator==2.1.0 pydantic-settings==2.1.0
+```
+
+**Lưu ý**: Phương án này đã được áp dụng và push vào master. Khi pull master mới nhất, các Dockerfile sẽ có các cài đặt này.
 
 **content-service/Dockerfile**:
 ```dockerfile
