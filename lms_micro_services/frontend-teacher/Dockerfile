@@ -1,5 +1,8 @@
 FROM node:16-alpine as build
 
+# Tăng bộ nhớ cho Node.js
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 WORKDIR /app
 
 # Copy package.json and install dependencies
@@ -9,8 +12,8 @@ RUN npm install
 # Copy all files
 COPY . .
 
-# Build the React app
-RUN npm run build
+# Build the React app với tùy chọn CI=false để bỏ qua warnings
+RUN CI=false npm run build
 
 # Production stage
 FROM nginx:alpine
