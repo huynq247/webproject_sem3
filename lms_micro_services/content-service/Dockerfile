@@ -33,8 +33,5 @@ EXPOSE 8002
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8002/health || exit 1
 
-# Make the wait script executable
-RUN chmod +x /app/wait-for-mongodb.py
-
-# Check MongoDB availability first, then run the application with detailed logging
-CMD python wait-for-mongodb.py && uvicorn app.main:app --host 0.0.0.0 --port 8002 --log-level debug
+# Run the application with detailed logging
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--log-level", "debug"]
