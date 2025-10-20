@@ -1,19 +1,21 @@
 FROM node:16-alpine as build
 
-# Tăng bộ nhớ cho Node.js
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+# Tăng bộ nhớ cho Node.js và tối ưu hóa cấu hình npm
+ENV NODE_OPTIONS="--max-old-space-size=8192"
+ENV GENERATE_SOURCEMAP=false
+ENV DISABLE_ESLINT_PLUGIN=true
 
 WORKDIR /app
 
 # Copy package.json and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci --silent
 
 # Copy all files
 COPY . .
 
-# Build the React app với tùy chọn CI=false để bỏ qua warnings
-RUN CI=false npm run build
+# Build the React app với tùy chọn bỏ qua warnings và tối ưu build
+RUN CI=false DISABLE_ESLINT_PLUGIN=true npm run build
 
 # Production stage
 FROM nginx:1.25.3-alpine
