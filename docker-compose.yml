@@ -1,16 +1,19 @@
 version: '3.8'
 
+# Sử dụng file cấu hình .env
+# Chỉ cần điều chỉnh file .env để thay đổi IP và port
+
 services:
   # Backend Services
   api-gateway:
     build: ./lms_micro_services/api-gateway
     container_name: lms-api-gateway
     ports:
-      - "8000:8000"
+      - "${API_GATEWAY_PORT}:8000"
     environment:
-      - AUTH_SERVICE_URL=http://auth-service:8001
-      - CONTENT_SERVICE_URL=http://content-service:8002
-      - ASSIGNMENT_SERVICE_URL=http://assignment-service:8004
+      - AUTH_SERVICE_URL=http://auth-service:${AUTH_SERVICE_PORT}
+      - CONTENT_SERVICE_URL=http://content-service:${CONTENT_SERVICE_PORT}
+      - ASSIGNMENT_SERVICE_URL=http://assignment-service:${ASSIGNMENT_SERVICE_PORT}
     networks:
       - lms-network
     depends_on:
@@ -30,11 +33,11 @@ services:
     container_name: lms-auth-service
     environment:
       # Sử dụng kết nối database hiện có
-      - DATABASE_URL=postgresql://admin:Mypassword123@14.161.50.86:25432/postgres
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       - ENVIRONMENT=development
       - DEPLOYMENT_TYPE=single-server
-      - SECRET_KEY=your_secret_key
-      - ALGORITHM=HS256
+      - SECRET_KEY=${JWT_SECRET_KEY}
+      - ALGORITHM=${JWT_ALGORITHM}
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       # Thêm các biến môi trường thiếu
       - REDIS_URL=redis://lms-redis:6379/0
@@ -59,16 +62,16 @@ services:
     container_name: lms-content-service
     environment:
       # Sử dụng kết nối MongoDB hiện có
-      - MONGODB_URL=mongodb://admin:Mypassword123@14.161.50.86:27017/content_db?authSource=admin
-      - MONGODB_DB_NAME=content_db
+      - MONGODB_URL=${MONGODB_URL}
+      - MONGODB_DB_NAME=${MONGODB_DB}
       - ENVIRONMENT=development
       - SERVICE_NAME=content-service
       - HOST=0.0.0.0
-      - PORT=8002
+      - PORT=${CONTENT_SERVICE_PORT}
       - DEBUG=true
-      - AUTH_SERVICE_URL=http://auth-service:8001
-      - JWT_SECRET_KEY=microservices-lms-secret-key-2025-production-secure-auth-service
-      - JWT_ALGORITHM=HS256
+      - AUTH_SERVICE_URL=http://auth-service:${AUTH_SERVICE_PORT}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
       # Thêm các biến môi trường thiếu
       - REDIS_URL=redis://lms-redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@lms-rabbitmq:5672/
@@ -91,15 +94,15 @@ services:
     container_name: lms-assignment-service
     environment:
       # Sử dụng kết nối database hiện có
-      - DATABASE_URL=postgresql+asyncpg://admin:Mypassword123@14.161.50.86:25432/postgres
-      - POSTGRES_HOST=14.161.50.86
-      - POSTGRES_PORT=25432
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=Mypassword123
-      - AUTH_SERVICE_URL=http://auth-service:8001
-      - CONTENT_SERVICE_URL=http://content-service:8002
-      - JWT_SECRET_KEY=your-jwt-secret-key-here-change-in-production
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - AUTH_SERVICE_URL=http://auth-service:${AUTH_SERVICE_PORT}
+      - CONTENT_SERVICE_URL=http://content-service:${CONTENT_SERVICE_PORT}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       # Thêm các biến môi trường thiếu
       - REDIS_URL=redis://lms-redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@lms-rabbitmq:5672/
@@ -123,9 +126,9 @@ services:
     build: ./lms_micro_services/frontend-admin
     container_name: lms-frontend-admin
     ports:
-      - "3001:80"
+      - "${FRONTEND_ADMIN_PORT}:80"
     environment:
-      - REACT_APP_API_BASE_URL=http://localhost:8000
+      - REACT_APP_API_BASE_URL=${API_GATEWAY_URL}
     # Thêm giới hạn tài nguyên để tránh lỗi OOM
     mem_limit: 4g
     mem_reservation: 2g
@@ -145,9 +148,9 @@ services:
     build: ./lms_micro_services/frontend-teacher
     container_name: lms-frontend-teacher
     ports:
-      - "3002:80"
+      - "${FRONTEND_TEACHER_PORT}:80"
     environment:
-      - REACT_APP_API_BASE_URL=http://localhost:8000
+      - REACT_APP_API_BASE_URL=${API_GATEWAY_URL}
     # Thêm giới hạn tài nguyên để tránh lỗi OOM
     mem_limit: 4g
     mem_reservation: 2g
@@ -167,9 +170,9 @@ services:
     build: ./lms_micro_services/frontend-student
     container_name: lms-frontend-student
     ports:
-      - "3003:80"
+      - "${FRONTEND_STUDENT_PORT}:80"
     environment:
-      - REACT_APP_API_BASE_URL=http://localhost:8000
+      - REACT_APP_API_BASE_URL=${API_GATEWAY_URL}
     # Thêm giới hạn tài nguyên để tránh lỗi OOM
     mem_limit: 4g
     mem_reservation: 2g
