@@ -146,6 +146,34 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir email-validator asyncpg
 ```
 
+## Vấn đề 4: Tham chiếu đến script wait-for-mongodb không tồn tại
+
+Dịch vụ `content-service` không thể xây dựng với lỗi sau:
+
+```
+cannot access '/app/wait-for-mongodb.py': No such file or directory
+```
+
+Đây là do Dockerfile của content-service có tham chiếu đến script `wait-for-mongodb.py` không tồn tại trong project.
+
+### Giải pháp:
+Đã loại bỏ các tham chiếu đến script `wait-for-mongodb.py` và `wait-for-mongodb.sh` không tồn tại trong Dockerfile của content-service. 
+
+**Các thay đổi đã thực hiện:**
+```diff
+- COPY ./wait-for-mongodb.py /app/
+- COPY ./wait-for-mongodb.sh /app/
+- RUN chmod +x /app/wait-for-mongodb.sh
+```
+
+Thay vào đó, dịch vụ sẽ khởi động trực tiếp bằng Uvicorn mà không cần script chờ cho MongoDB. Việc kết nối đến MongoDB sẽ được xử lý trong mã ứng dụng với các cơ chế retry phù hợp.
+
 ## Giải pháp Lâu dài
 
-Thêm các gói phụ thuộc còn thiếu vào tệp requirements.txt của mỗi dịch vụ backend là cách tốt nhất để đảm bảo chúng được cài đặt khi container được xây dựng lại trong tương lai. Đảm bảo commit các thay đổi này vào repository để mọi triển khai trong tương lai sẽ bao gồm đầy đủ các phụ thuộc.
+1. Thêm các gói phụ thuộc còn thiếu vào tệp requirements.txt của mỗi dịch vụ backend là cách tốt nhất để đảm bảo chúng được cài đặt khi container được xây dựng lại trong tương lai. 
+
+2. Đảm bảo rằng Dockerfile không tham chiếu đến bất kỳ file nào không tồn tại trong project.
+
+3. Triển khai cơ chế retry kết nối cơ sở dữ liệu trong mã ứng dụng thay vì sử dụng script chờ bên ngoài.
+
+4. Đảm bảo commit các thay đổi này vào repository để mọi triển khai trong tương lai sẽ bao gồm đầy đủ các phụ thuộc.
