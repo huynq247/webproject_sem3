@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  # Backend Services
+  api-gateway:
+    build: ./lms_micro_services/api-gateway
+    container_name: lms-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - CONTENT_SERVICE_URL=http://content-service:8002
+      - ASSIGNMENT_SERVICE_URL=http://assignment-service:8004
+    networks:
+      - lms-network
+    depends_on:
+      - auth-service
+      - content-service
+      - assignment-service
+    restart: unless-stopped
+
+  auth-service:
+    build: ./lms_micro_services/auth-service
+    container_name: lms-auth-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@lms-db:5432/lms_auth
+      - SECRET_KEY=your_secret_key
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+    networks:
+      - lms-network
+    depends_on:
+      - lms-db
+    restart: unless-stopped
+
+  content-service:
+    build: ./lms_micro_services/content-service
+    container_name: lms-content-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@lms-db:5432/lms_content
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      # Add any additional environment variables for your content service
+    networks:
+      - lms-network
+    depends_on:
+      - lms-db
+      - auth-service
+    restart: unless-stopped
+
+  assignment-service:
+    build: ./lms_micro_services/assignment-service
+    container_name: lms-assignment-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@lms-db:5432/lms_assignment
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - CONTENT_SERVICE_URL=http://content-service:8002
+    networks:
+      - lms-network
+    depends_on:
+      - lms-db
+      - auth-service
+      - content-service
+    restart: unless-stopped
+
+  # Frontend Applications
+  frontend-admin:
+    build: ./lms_micro_services/frontend-admin
+    container_name: lms-frontend-admin
+    ports:
+      - "3001:80"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+    networks:
+      - lms-network
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+  frontend-teacher:
+    build: ./lms_micro_services/frontend-teacher
+    container_name: lms-frontend-teacher
+    ports:
+      - "3002:80"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+    networks:
+      - lms-network
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+  frontend-student:
+    build: ./lms_micro_services/frontend-student
+    container_name: lms-frontend-student
+    ports:
+      - "3003:80"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+    networks:
+      - lms-network
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+  # Database
+  lms-db:
+    image: postgres:14
+    container_name: lms-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=lms_auth,lms_content,lms_assignment
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/create-multiple-postgresql-databases.sh
+    networks:
+      - lms-network
+    restart: unless-stopped
+
+networks:
+  lms-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
