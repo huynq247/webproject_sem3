@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install email-validator and pydantic-settings explicitly
+RUN pip install --no-cache-dir email-validator==2.1.0 pydantic-settings==2.1.0
+
 # Copy application code
 COPY . .
 
